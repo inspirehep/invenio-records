@@ -18,18 +18,18 @@
 # 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 
 """Record API."""
-
-from flask import current_app
-from jsonpatch import apply_patch
-from jsonschema import validate
-
 from invenio.base.globals import cfg
 from invenio.base.helpers import unicodifier
 from invenio.base.utils import toposort_send
 from invenio.ext.sqlalchemy import db
 from invenio.utils.datastructures import SmartDict
 
+from jsonpatch import apply_patch
+
+from jsonschema import validate
+
 from .models import RecordMetadata
+
 from .signals import (after_record_insert, after_record_update,
                       before_record_insert, before_record_update)
 
@@ -68,11 +68,10 @@ class Record(SmartDict):
 
     @classmethod
     def create(cls, data, schema=None):
-        db.session.begin(subtransactions=True)
-        try:
+        with db.session.begin_nested():
             record = cls(unicodifier(data))
-
             from invenio.modules.jsonalchemy.registry import functions
+
             list(functions('recordext'))
 
             toposort_send(before_record_insert, record)
@@ -85,15 +84,9 @@ class Record(SmartDict):
                 metadata['id'] = record.get('recid')
 
             db.session.add(RecordMetadata(**metadata))
-            db.session.commit()
 
-            toposort_send(after_record_insert, record)
-
-            return record
-        except Exception:
-            current_app.logger.exception("Problem creating a record.")
-            db.session.rollback()
-            raise
+        toposort_send(after_record_insert, record)
+        return record
 
     def patch(self, patch):
         model = self.model
@@ -125,7 +118,8 @@ class Record(SmartDict):
 
     @classmethod
     def get_record(cls, recid, *args, **kwargs):
-        obj = RecordMetadata.query.get(recid)
+        with db.session.no_autoflush:
+            obj = RecordMetadata.query.get(recid)
         return cls(obj.json, model=obj) if obj else None
 
     def dumps(self, **kwargs):
