@@ -30,6 +30,21 @@ from invenio.base.globals import cfg
 from ..signals import before_record_index
 
 
+@before_record_index.connect
+def populate_authors(recid, json):
+    """ Populates a json record before indexing it to elastic.
+        Adds a field for all the possible variations of an authors name
+    """
+    from invenio_records.tasks.tokenizer import BibIndexAuthorTokenizer
+    tokenizer = BibIndexAuthorTokenizer()
+    authors = json.get("authors")
+    if authors is not None:
+        for author in authors:
+            name = author.get("full_name")
+            if name is not None:
+                author.update({"name_variations": tokenizer.tokenize(name)})
+
+
 def get_record_index(record):
     """Decide which index the record should go to."""
     query = 'collection:"{collection}"'
@@ -45,6 +60,7 @@ def index_record(recid, json):
     """Index a record in elasticsearch."""
     before_record_index.send(recid, json=json)
     index = get_record_index(json) or cfg['SEARCH_ELASTIC_DEFAULT_INDEX']
+    before_record_index.send(recid, json=json)
     es.index(
         index=index,
         doc_type='record',
