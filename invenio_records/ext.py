@@ -51,6 +51,7 @@ class _RecordsState(object):
         if not isinstance(schema, dict):
             schema = {'$ref': schema}
         return validate(data, schema,
+                        types=self.app.config.get("RECORDS_VALIDATION_TYPES", {}),
                         resolver=self.ref_resolver_cls.from_schema(schema))
 
     def replace_refs(self, data):

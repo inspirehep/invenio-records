@@ -77,6 +77,7 @@ def test_db():
     InvenioRecords(app)
 
     with app.app_context():
+        db.drop_all()
         db.create_all()
         assert 'records_metadata' in db.metadata.tables
         assert 'records_metadata_version' in db.metadata.tables
@@ -131,6 +132,7 @@ def test_db():
         with pytest.raises(MissingModelError):
             record3.commit()
 
+    # Check invalid schema values
     with app.app_context():
         data = {
             '$schema': 'http://json-schema.org/geo#',
@@ -143,6 +145,21 @@ def test_db():
         record_with_schema['latitude'] = 'invalid'
         with pytest.raises(ValidationError):
             record_with_schema.commit()
+
+    # Allow types overriding on schema validation
+    with app.app_context():
+        data = {
+            'title': 'Test',
+            'hello': tuple(['foo', 'bar']),
+            '$schema': schema
+        }
+        app.config['RECORDS_VALIDATION_TYPES'] = {}
+        with pytest.raises(ValidationError):
+            Record.create(data).commit()
+
+        app.config['RECORDS_VALIDATION_TYPES'] = {'array': (list, tuple)}
+        record_uuid = Record.create(data).commit()
+        db.session.commit()
 
     with app.app_context():
         db.drop_all()

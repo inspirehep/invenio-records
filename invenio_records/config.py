@@ -40,3 +40,6 @@ RECORDS_KEY_ALIASES = {
     '980__a': 'collections.primary',
     '980__b': 'collections.secondary',
 }
+
+RECORDS_VALIDATION_TYPES = {}
+"""Pass additional types when validating record against schema."""
