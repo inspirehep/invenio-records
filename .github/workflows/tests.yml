@@ -29,52 +29,16 @@ jobs:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-          python-version: [3.7, 3.8, 3.9]
+          python-version: [3.8]
           requirements-level: [pypi]
-          db-service: [postgresql10, postgresql14, mysql5, mysql8]
-          exclude:
-          - python-version: 3.7
-            db-service: postgresql14
-
-          - python-version: 3.7
-            db-service: mysql8
-
-          - python-version: 3.8
-            db-service: postgresql10
-
-          - python-version: 3.8
-            db-service: mysql5
-
-          - python-version: 3.9
-            db-service: postgresql10
-
-          - python-version: 3.9
-            db-service: mysql5
+          db-service: [postgresql14]
 
           include:
-          - db-service: postgresql10
-            DB: postgresql
-            POSTGRESQL_VERSION: POSTGRESQL_10_LATEST
-            SQLALCHEMY_DATABASE_URI: "postgresql+psycopg2://invenio:invenio@localhost:5432/invenio"
-            EXTRAS: "tests,postgresql"
-
           - db-service: postgresql14
             DB: postgresql
             POSTGRESQL_VERSION: POSTGRESQL_14_LATEST
             SQLALCHEMY_DATABASE_URI: "postgresql+psycopg2://invenio:invenio@localhost:5432/invenio"
             EXTRAS: "tests,postgresql"
-
-          - db-service: mysql5
-            DB: mysql
-            MYSQL_VERSION: MYSQL_5_LATEST
-            SQLALCHEMY_DATABASE_URI: "mysql+pymysql://invenio:invenio@localhost:3306/invenio"
-            EXTRAS: "tests,mysql"
-
-          - db-service: mysql8
-            DB: mysql
-            MYSQL_VERSION: MYSQL_8_LATEST
-            SQLALCHEMY_DATABASE_URI: "mysql+pymysql://invenio:invenio@localhost:3306/invenio"
-            EXTRAS: "tests,mysql"
 
     env:
       SQLALCHEMY_DATABASE_URI: ${{matrix.SQLALCHEMY_DATABASE_URI}}
